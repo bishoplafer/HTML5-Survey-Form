@@ -19,8 +19,8 @@
 <script type="text/javascript" src="scripts/html5slider.js"></script>
 <script>
  $(document).ready(function() {
-   $('.column').columnize({ columns: 2 });
- 	$("#review").click(function () { 
+ 	$('.column').columnize({ columns: 2 });
+	$("#review").click(function () { 
 		interestsChecked = $('.interests:checked').map(function() {
 			return $(this).val();
 		}).get();
@@ -31,9 +31,21 @@
 			return $(this).val();
 		}).get();
 		$("#sharedResult").html('<strong>Shared: </strong>');
-		$("#sharedResult").append(sharedChecked.join(', '));	
+		$("#sharedResult").append(sharedChecked.join(', '));
+		
+		var theDesiredCourse = localStorage.getItem('desiredCourse');
+		theDesiredCourse = "<strong>Desired:</strong> " + theDesiredCourse;
+		$("#desiredCourseResult").html(theDesiredCourse);
+		
+		var theArtistLength = localStorage.getItem('artistLength');
+		theArtistLength = "<strong>Artist:</strong> " + theArtistLength;
+		$("#artistLengthResult").html(theArtistLength);
+		
+		var theHoursPractice = localStorage.getItem('hoursPractice');
+		theHoursPractice = "<strong>Hours:</strong> " + theHoursPractice;
+		$("#hoursPracticeResult").html(theHoursPractice);
 	});
-});
+ });
    	// Update text field for slider
 	function printValue(sliderID, textbox) {
 		var x = document.getElementById(textbox);
@@ -153,7 +165,7 @@
           <div class="innerContainer">
             <h2>Q 3/5</h2>
             <p>How long have you thought of yourself as an artist?</p>
-           <p>
+            <p>
               <input type="radio" id="artistLength1" name="artistLength" value="Since I was a kid" />
               <label>Since I was a kid.</label>
             </p>
@@ -200,6 +212,7 @@
             <h2>Q 5/5</h2>
             <p>Who have you shared your work with?<br>
               (Check all that apply.)</p>
+            <p>
               <label>
                 <input class="shared" type="checkbox" name="viewers_" value="Family" id="viewers_0" />
                 Family</label>
