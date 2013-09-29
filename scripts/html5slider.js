@@ -2,7 +2,7 @@
 html5slider - a JS implementation of <input type=range> for Firefox 16 and up
 https://github.com/fryn/html5slider
 
-Copyright (c) 2010-2012 Frank Yan, <http://frankyan.com>
+Copyright (c) 2010-2013 Frank Yan, <http://frankyan.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -37,8 +37,7 @@ try {
 
 // test for required property support
 test.style.background = 'linear-gradient(red, red)';
-if (!test.style.backgroundImage || !('MozAppearance' in test.style) ||
-    !document.mozSetImageElement || !this.MutationObserver)
+if (!test.style.backgroundImage || !('MozAppearance' in test.style))
   return;
 
 var scale;
@@ -66,7 +65,8 @@ var options = {
   attributes: true,
   attributeFilter: ['min', 'max', 'step', 'value']
 };
-var forEach = Array.prototype.forEach;
+var onInput = document.createEvent('HTMLEvents');
+onInput.initEvent('input', true, false);
 var onChange = document.createEvent('HTMLEvents');
 onChange.initEvent('change', true, false);
 
@@ -74,32 +74,39 @@ if (document.readyState == 'loading')
   document.addEventListener('DOMContentLoaded', initialize, true);
 else
   initialize();
+addEventListener('pageshow', recreate, true);
 
 function initialize() {
   // create initial sliders
-  forEach.call(document.querySelectorAll('input[type=range]'), transform);
+  recreate();
   // create sliders on-the-fly
   new MutationObserver(function(mutations) {
     mutations.forEach(function(mutation) {
       if (mutation.addedNodes)
-        forEach.call(mutation.addedNodes, function(node) {
-          check(node);
-          if (node.childElementCount)
-            forEach.call(node.querySelectorAll('input'), check);
+        Array.forEach(mutation.addedNodes, function(node) {
+          if (!(node instanceof Element))
+            ;
+          else if (node.childElementCount)
+            Array.forEach(node.querySelectorAll('input[type=range]'), check);
+          else if (node.mozMatchesSelector('input[type=range]'))
+            check(node);
         });
     });
   }).observe(document, { childList: true, subtree: true });
 }
 
+function recreate() {
+  Array.forEach(document.querySelectorAll('input[type=range]'), check);
+}
+
 function check(input) {
-  if (input.localName == 'input' && input.type != 'range' &&
-      input.getAttribute('type') == 'range')
+  if (input.type != 'range')
     transform(input);
 }
 
 function transform(slider) {
 
-  var isValueSet, areAttrsSet, isChanged, isClick, prevValue, rawValue, prevX;
+  var isValueSet, areAttrsSet, isUI, isClick, prevValue, rawValue, prevX;
   var min, max, step, range, value = slider.value;
 
   // lazily create shared slider affordance
@@ -129,17 +136,23 @@ function transform(slider) {
   };
   slider.__defineGetter__('value', getValue);
   slider.__defineSetter__('value', setValue);
-  slider.__defineGetter__('type', function() { return 'range'; });
+  Object.defineProperty(slider, 'type', {
+    get: function() { return 'range'; }
+  });
 
   // sync properties with attributes
-  ['min', 'max', 'step'].forEach(function(prop) {
-    if (slider.hasAttribute(prop))
+  ['min', 'max', 'step'].forEach(function(name) {
+    if (slider.hasAttribute(name))
       areAttrsSet = true;
-    slider.__defineGetter__(prop, function() {
-      return this.hasAttribute(prop) ? this.getAttribute(prop) : '';
-    });
-    slider.__defineSetter__(prop, function(val) {
-      val === null ? this.removeAttribute(prop) : this.setAttribute(prop, val);
+    Object.defineProperty(slider, name, {
+      get: function() {
+        return this.hasAttribute(name) ? this.getAttribute(name) : '';
+      },
+      set: function(val) {
+        val === null ?
+          this.removeAttribute(name) :
+          this.setAttribute(name, val);
+      }
     });
   });
 
@@ -172,7 +185,7 @@ function transform(slider) {
     setTimeout(function() { isClick = false; }, 0);
     if (e.button || !range)
       return;
-    var width = parseFloat(getComputedStyle(this, 0).width);
+    var width = parseFloat(getComputedStyle(this).width);
     var multiplier = (width - thumb.width) / range;
     if (!multiplier)
       return;
@@ -181,7 +194,7 @@ function transform(slider) {
               (value - min) * multiplier;
     // if click was not on thumb, move thumb to click location
     if (Math.abs(dev) > thumb.radius) {
-      isChanged = true;
+      isUI = true;
       this.value -= -dev / multiplier;
     }
     rawValue = value;
@@ -191,25 +204,27 @@ function transform(slider) {
   }
 
   function onDrag(e) {
-    var width = parseFloat(getComputedStyle(this, 0).width);
+    var width = parseFloat(getComputedStyle(this).width);
     var multiplier = (width - thumb.width) / range;
     if (!multiplier)
       return;
     rawValue += (e.clientX - prevX) / multiplier;
     prevX = e.clientX;
-    isChanged = true;
+    isUI = true;
     this.value = rawValue;
   }
 
   function onDragEnd() {
     this.removeEventListener('mousemove', onDrag, true);
     this.removeEventListener('mouseup', onDragEnd, true);
+    slider.dispatchEvent(onInput);
+    slider.dispatchEvent(onChange);
   }
 
   function onKeyDown(e) {
     if (e.keyCode > 36 && e.keyCode < 41) { // 37-40: left, up, right, down
       onFocus.call(this);
-      isChanged = true;
+      isUI = true;
       this.value = value + (e.keyCode == 38 || e.keyCode == 39 ? step : -step);
     }
   }
@@ -257,9 +272,10 @@ function transform(slider) {
   // renders slider using CSS background ;)
   function draw(attrsModified) {
     calc();
-    if (isChanged && value != prevValue)
-      slider.dispatchEvent(onChange);
-    isChanged = false;
+    var wasUI = isUI;
+    isUI = false;
+    if (wasUI && value != prevValue)
+      slider.dispatchEvent(onInput);
     if (!attrsModified && value == prevValue)
       return;
     prevValue = value;
