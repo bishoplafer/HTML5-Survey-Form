@@ -20,30 +20,30 @@
 <script>
  $(document).ready(function() {
    $('.column').columnize({ columns: 2 });
- 	$("#review").click(function () { 
+ 	$('#review').click(function () { 
 		interestsChecked = $('.interests:checked').map(function() {
 			return $(this).val();
 		}).get();
-		$("#interestsResult").html('<strong>Interests: </strong>');
-		$("#interestsResult").append(interestsChecked.join(', '));
+		$('#interestsResult').html('<strong>Interests: </strong>');
+		$('#interestsResult').append(interestsChecked.join(', '));
 		
 		sharedChecked = $('.shared:checked').map(function() {
 			return $(this).val();
 		}).get();
-		$("#sharedResult").html('<strong>Shared: </strong>');
-		$("#sharedResult").append(sharedChecked.join(', '));	
+		$('#sharedResult').html('<strong>Shared: </strong>');
+		$('#sharedResult').append(sharedChecked.join(', '));	
 		
 		var theDesiredCourse = localStorage.getItem('desiredCourse');
 		theDesiredCourse = "<strong>Desired:</strong> " + theDesiredCourse;
-		$("#desiredCourseResult").html(theDesiredCourse);
+		$('#desiredCourseResult').html(theDesiredCourse);
 		
 		var theArtistLength = localStorage.getItem('artistLength');
 		theArtistLength = "<strong>Artist:</strong> " + theArtistLength;
-		$("#artistLengthResult").html(theArtistLength);
+		$('#artistLengthResult').html(theArtistLength);
 		
 		var theHoursPractice = localStorage.getItem('hoursPractice');
 		theHoursPractice = "<strong>Hours:</strong> " + theHoursPractice;
-		$("#hoursPracticeResult").html(theHoursPractice);
+		$('#hoursPracticeResult').html(theHoursPractice);
 	});
 });
    	// Update text field for slider
